@@ -70,7 +70,7 @@ export function validationMetadataArrayToSchemas(
     Object.entries(_groupBy(metas, 'propertyName')).forEach(
       ([propName, propMetas]) => {
         const schema = applyConverters(propMetas, options)
-        properties[propName] = applyDecorators(
+        properties[applyExpose(target, propName, options)] = applyDecorators(
           schema,
           target,
           options,
@@ -252,6 +252,20 @@ function isExcluded(
   )
 }
 
+/** Get name under which the property was exposed with class-transformer `@Expose` decorator. */
+function applyExpose(
+  target: Function,
+  propertyName: string,
+  options: IOptions
+) {
+  return (
+    options.classTransformerMetadataStorage?.findExposeMetadata(
+      target,
+      propertyName
+    )?.options.name || propertyName
+  )
+}
+
 /**
  * Given a JSON Schema object, supplement it with additional schema properties
  * defined by target object's @JSONSchema decorator.
@@ -301,5 +315,5 @@ function getRequiredPropNames(
         ? isDefined(own) || (!isOptional(own) && isDefined(inherited))
         : !(isOptional(own) || isOptional(inherited))
     })
-    .map(([name]) => name)
+    .map(([name]) => applyExpose(target, name, options))
 }

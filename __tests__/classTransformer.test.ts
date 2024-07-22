@@ -1,5 +1,5 @@
 // tslint:disable:no-submodule-imports
-import { Type } from 'class-transformer'
+import { Expose, Type } from 'class-transformer'
 import {
   ArrayMinSize,
   getFromContainer,
@@ -32,6 +32,12 @@ export class ValidationErrorModel {
   @ValidateNested({ each: true })
   @Type(() => ValidationError)
   anotherErrorList: ValidationError[]
+}
+
+export class ExposedModel {
+  @Expose({ name: 'renamedToThis' })
+  @IsString()
+  renamedField: string
 }
 
 describe('class-transformer compatibility', () => {
@@ -91,6 +97,40 @@ describe('class-transformer compatibility', () => {
         },
       },
       required: ['name', 'errorList'],
+      type: 'object',
+    })
+  })
+
+  it('ignores @Expose decorator when classTransformerMetadataStorage option is not defined', () => {
+    // @ts-ignore
+    const metadata = getFromContainer(MetadataStorage).validationMetadatas
+    const schemas = validationMetadatasToSchemas()
+
+    expect(schemas.ExposedModel).toEqual({
+      properties: {
+        renamedField: {
+          type: 'string',
+        },
+      },
+      required: ['renamedField'],
+      type: 'object',
+    })
+  })
+
+  it('applies @Expose decorator when classTransformerMetadataStorage option is defined', () => {
+    // @ts-ignore
+    const metadata = getFromContainer(MetadataStorage).validationMetadatas
+    const schemas = validationMetadatasToSchemas({
+      classTransformerMetadataStorage: defaultMetadataStorage,
+    })
+
+    expect(schemas.ExposedModel).toEqual({
+      properties: {
+        renamedToThis: {
+          type: 'string',
+        },
+      },
+      required: ['renamedToThis'],
       type: 'object',
     })
   })
